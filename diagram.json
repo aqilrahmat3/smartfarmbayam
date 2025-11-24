@@ -3,62 +3,59 @@
   "author": "ChatGPT",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-breadboard-half", "id": "bb1", "top": 64, "left": -6, "attrs": {} },
-    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": -168, "left": -149, "attrs": {} },
-    {
-      "type": "wokwi-dht22",
-      "id": "dht1",
-      "top": 0,
-      "left": 138,
-      "attrs": { "humidity": "40", "temperature": "25" }
-    },
-    {
-      "type": "wokwi-photoresistor-sensor",
-      "id": "ldr1",
-      "top": -0.3,
-      "left": 196,
-      "rotate": 90,
-      "attrs": {}
-    },
-    { "type": "wokwi-potentiometer", "id": "pot_ph", "top": 113.9, "left": -297.8, "attrs": {} },
-    { "type": "wokwi-potentiometer", "id": "pot_tds", "top": 219.5, "left": -297.8, "attrs": {} },
-    { "type": "wokwi-potentiometer", "id": "pot_ec", "top": 17.9, "left": -278.6, "attrs": {} },
-    {
-      "type": "wokwi-lcd2004",
-      "id": "lcd1",
-      "top": -224,
-      "left": 101,
-      "attrs": { "pins": "i2c" }
-    }
+    { "type": "wokwi-breadboard-half", "id": "bb1", "top": 64, "left": -6 },
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": -168, "left": -149 },
+
+    { "type": "wokwi-dht22", "id": "dht1", "top": 0, "left": 138, "attrs": { "humidity": "40", "temperature": "25" } },
+    { "type": "wokwi-photoresistor-sensor", "id": "ldr1", "top": -0.3, "left": 196, "rotate": 90 },
+
+    { "type": "wokwi-potentiometer", "id": "pot_ph", "top": 113.9, "left": -297.8 },
+    { "type": "wokwi-potentiometer", "id": "pot_tds", "top": 219.5, "left": -297.8 },
+    { "type": "wokwi-potentiometer", "id": "pot_ec", "top": 17.9, "left": -278.6 },
+
+    { "type": "wokwi-lcd2004", "id": "lcd1", "top": -224, "left": 101, "attrs": { "pins": "i2c" } },
+
+    { "type": "wokwi-led", "id": "led_pump1", "top": 310, "left": 20, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led_pump2", "top": 310, "left": 70, "attrs": { "color": "yellow" } },
+    { "type": "wokwi-led", "id": "led_pump3", "top": 310, "left": 120, "attrs": { "color": "green" } }
   ],
+
   "connections": [
-    ["esp:3V3", "bb1:bp.1", "red", []],
-    ["esp:GND.1", "bb1:bn.1", "black", []],
+    ["esp:3V3", "bb1:bp.1", "red"],
+    ["esp:GND.1", "bb1:bn.1", "black"],
 
-    ["dht1:VCC", "bb1:bp.2", "red", []],
-    ["dht1:GND", "bb1:bn.2", "black", []],
-    ["dht1:SDA", "esp:D15", "green", []],
+    ["dht1:VCC", "bb1:bp.2", "red"],
+    ["dht1:GND", "bb1:bn.2", "black"],
+    ["dht1:SDA", "esp:D15", "green"],
 
-    ["ldr1:VCC", "bb1:bp.3", "red", []],
-    ["ldr1:GND", "bb1:bn.3", "black", []],
-    ["ldr1:AO", "esp:D34", "green", []],
+    ["ldr1:VCC", "bb1:bp.3", "red"],
+    ["ldr1:GND", "bb1:bn.3", "black"],
+    ["ldr1:AO", "esp:D34", "green"],
 
-    ["pot_ph:VCC", "bb1:bp.4", "red", []],
-    ["pot_ph:GND", "bb1:bn.4", "black", []],
-    ["pot_ph:SIG", "esp:D32", "green", []],
+    ["pot_ph:VCC", "bb1:bp.4", "red"],
+    ["pot_ph:GND", "bb1:bn.4", "black"],
+    ["pot_ph:SIG", "esp:D32", "green"],
 
-    ["pot_tds:VCC", "bb1:bp.5", "red", []],
-    ["pot_tds:GND", "bb1:bn.5", "black", []],
-    ["pot_tds:SIG", "esp:D33", "green", []],
+    ["pot_tds:VCC", "bb1:bp.5", "red"],
+    ["pot_tds:GND", "bb1:bn.5", "black"],
+    ["pot_tds:SIG", "esp:D33", "green"],
 
-    ["pot_ec:VCC", "bb1:bp.6", "red", []],
-    ["pot_ec:GND", "bb1:bn.6", "black", []],
-    ["pot_ec:SIG", "esp:D35", "green", []],
+    ["pot_ec:VCC", "bb1:bp.6", "red"],
+    ["pot_ec:GND", "bb1:bn.6", "black"],
+    ["pot_ec:SIG", "esp:D35", "green"],
 
-    ["lcd1:VCC", "bb1:bp.7", "red", []],
-    ["lcd1:GND", "bb1:bn.7", "black", []],
-    ["lcd1:SDA", "esp:D21", "green", []],
-    ["lcd1:SCL", "esp:D22", "green", []]
-  ],
-  "dependencies": {}
+    ["lcd1:VCC", "bb1:bp.7", "red"],
+    ["lcd1:GND", "bb1:bn.7", "black"],
+    ["lcd1:SDA", "esp:D21", "green"],
+    ["lcd1:SCL", "esp:D22", "green"],
+
+    ["led_pump1:A", "esp:D2", "green"],
+    ["led_pump1:C", "bb1:bn.10", "black"],
+
+    ["led_pump2:A", "esp:D4", "green"],
+    ["led_pump2:C", "bb1:bn.11", "black"],
+
+    ["led_pump3:A", "esp:D5", "green"],
+    ["led_pump3:C", "bb1:bn.12", "black"]
+  ]
 }
