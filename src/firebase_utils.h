@@ -6,6 +6,7 @@
 
 void initFirebase();
 void sendToFirebase(float ph, float tds, float ec, float temp, String lightCat);
+void setBool(const String& path, bool value);
 
 bool getBool(const String& path);
 float getFloat(const String& path);
