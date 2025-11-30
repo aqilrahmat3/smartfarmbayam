@@ -7,9 +7,6 @@ float readTemperature();
 float readPH();
 float readTDS();
 float readEC();
-String getLightCategory(int value);
-int readLightAnalog();
-
 void initSensors();
 
 #endif
