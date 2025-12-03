@@ -3,7 +3,6 @@
 #include "firebase_utils.h"
 
 // Relay pins mengikuti logika lama kamu
-#define RELAY_LAMP        5
 #define RELAY_PUMP_ACID   2
 #define RELAY_PUMP_NUTRI  4
 
@@ -25,11 +24,9 @@ const unsigned long MAX_RUN_TIME = 12000;
 const unsigned long COOLDOWN_TIME = 45000;
 
 void initAutoPins() {
-    pinMode(RELAY_LAMP, OUTPUT);
     pinMode(RELAY_PUMP_ACID, OUTPUT);
     pinMode(RELAY_PUMP_NUTRI, OUTPUT);
 
-    digitalWrite(RELAY_LAMP, LOW);
     digitalWrite(RELAY_PUMP_ACID, LOW);
     digitalWrite(RELAY_PUMP_NUTRI, LOW);
 }
@@ -37,21 +34,12 @@ void initAutoPins() {
 void handleAutoMode() {
 
     // === Baca Sensor dari sensor_utils ===
-    int lightValue = readLightAnalog();
     float pHValue = readPH();
     float ecValue = readEC();
     float tdsValue = readTDS();
 
 
     unsigned long now = millis();
-
-    // =========================================
-    // 🔦 Logika Lampu Berdasarkan Cahaya
-    // =========================================
-    bool lampState = lightValue < 400; // gelap → lampu ON
-    digitalWrite(RELAY_LAMP, lampState ? HIGH : LOW);
-    setBool("/devices/tool/lamp", lampState);
-
 
     // =========================================
     // ⚗ Logika Pompa Asam (Pengaturan pH)

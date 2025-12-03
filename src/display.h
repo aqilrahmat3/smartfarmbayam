@@ -4,6 +4,6 @@
 #include <Arduino.h>
 
 void initDisplay();
-void showStatus(float ph, float tds, float ec, float temp, String lightCat, bool isManual);
+void showStatus(float ph, float tds, float ec, float temp,bool isManual);
 
 #endif

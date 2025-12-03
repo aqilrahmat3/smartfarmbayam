@@ -5,8 +5,8 @@
 
 struct AlertState {
     bool active;
-    unsigned long startTime; // millis() atau NTP epoch
-    float lastValue;
+    uint64_t startTime;  // HARUS 64-bit
+    uint64_t lastValue;  // juga 64-bit jika perlu
 };
 
 // Inisialisasi alert

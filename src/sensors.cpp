@@ -33,14 +33,4 @@ float readEC() {
   return map(rawEC, 0, 4095, 0, 3);
 }
 
-int readLightAnalog() {
-  return analogRead(LDR_AO);
-}
 
-String getLightCategory(int value) {
-  if(value<800) return "Gelap";
-  else if(value<1600) return "Redup";
-  else if(value<2600) return "Normal";
-  else if(value<3500) return "Terang";
-  else return "SgtTerang";
-}

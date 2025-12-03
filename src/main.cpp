@@ -52,11 +52,9 @@ void loop() {
   float ph = readPH();
   float tds = readTDS();
   float ec = readEC();
-  int lightAnalog = readLightAnalog();
-  String cat = getLightCategory(lightAnalog);
-  showStatus(ph, tds, ec, temp, cat, isManual);
-  sendToFirebase(ph, tds, ec, temp, cat);
+  showStatus(ph, tds, ec, temp,isManual);
+  sendToFirebase(ph, tds, ec, temp);
   checkAlerts(ph, tds, ec, temp);
 
-  delay(2000);
+  delay(1000);
 }

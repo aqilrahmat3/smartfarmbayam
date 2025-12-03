@@ -73,7 +73,7 @@ void setBool(const String& path, bool value) {
 // 📡 KIRIM DATA SENSOR KE FIREBASE
 // disimpan dalam logs history ESP32
 // =========================================
-void sendToFirebase(float ph, float tds, float ec, float temp, String lightCat) {
+void sendToFirebase(float ph, float tds, float ec, float temp) {
 
     struct tm timeinfo;
 
@@ -83,30 +83,19 @@ void sendToFirebase(float ph, float tds, float ec, float temp, String lightCat) 
         return;
     }
 
-    unsigned long unix_ms = (unsigned long)mktime(&timeinfo) * 1000UL;
+    // 64-bit timestamp
+    uint64_t unix_ms = (uint64_t)mktime(&timeinfo) * 1000ULL;
 
-    char iso[30];
-    sprintf(iso, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-            timeinfo.tm_year + 1900,
-            timeinfo.tm_mon + 1,
-            timeinfo.tm_mday,
-            timeinfo.tm_hour,
-            timeinfo.tm_min,
-            timeinfo.tm_sec
-    );
+    // Path pakai unix_ms 64-bit
+    String path = "/devices/esp32_001/readings/" + String((long long)unix_ms);
 
-    // Path ke database (auto create berdasarkan timestamp)
-    String path = "/devices/esp32_001/readings/" + String(unix_ms);
-
-    // JSON Payload
     FirebaseJson json;
     json.set("ph", ph);
     json.set("tds_ppm", tds);
     json.set("ec_ms_cm", ec);
     json.set("temp_c", temp);
-    json.set("light_category", lightCat);
-    json.set("timestamp_iso", iso);
-    json.set("unix_ms", unix_ms);
+    json.set("unix_ms", (long long) unix_ms);
 
     Firebase.setJSON(fbdo, path.c_str(), json);
 }
+

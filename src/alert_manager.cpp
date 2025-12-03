@@ -1,16 +1,27 @@
 #include "alert_manager.h"
 #include "firebase_utils.h"
+#include <LiquidCrystal_I2C.h>
+#include "time.h"
 
+extern LiquidCrystal_I2C lcd;
 // STATE ALERT
 AlertState phAlert = {false, 0, 0};
 AlertState ecAlert = {false, 0, 0};
 AlertState tdsAlert = {false, 0, 0};
 AlertState tempAlert = {false, 0, 0};
 
+struct tm timeinfo;
 // Fungsi helper
-unsigned long nowMs() {
-    return millis();
+uint64_t nowMs() {
+    if (!getLocalTime(&timeinfo)) {
+        lcd.clear();
+        lcd.print("Time Sync Err");
+        return 0;
+    }
+    // Dapatkan unix timestamp ms dari struct tm
+    return (uint64_t)mktime(&timeinfo) * 1000ULL;
 }
+
 
 bool outOfRange(float v, float minV, float maxV) {
     return v < minV || v > maxV;
@@ -20,47 +31,16 @@ bool beyondThreshold(float v, float last, float thr) {
     return abs(v - last) >= thr;
 }
 
-// Kirim alert ke Firebase
-void sendAlert(String type, float value, unsigned long startMs, unsigned long endMs) {
-    struct tm timeinfo;
-    char startISO[30] = "";
-    char endISO[30] = "";
-
-    // Konversi startTime ke ISO jika NTP ready
-    if (getLocalTime(&timeinfo)) {
-        time_t t = time(nullptr) - (millis() - startMs)/1000; // perkiraan start time
-        gmtime_r(&t, &timeinfo);
-        sprintf(startISO, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-                timeinfo.tm_year + 1900,
-                timeinfo.tm_mon + 1,
-                timeinfo.tm_mday,
-                timeinfo.tm_hour,
-                timeinfo.tm_min,
-                timeinfo.tm_sec);
-    }
-
-    // Konversi endTime jika >0
-    if (endMs > 0 && getLocalTime(&timeinfo)) {
-        time_t t = time(nullptr) - (millis() - endMs)/1000;
-        gmtime_r(&t, &timeinfo);
-        sprintf(endISO, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-                timeinfo.tm_year + 1900,
-                timeinfo.tm_mon + 1,
-                timeinfo.tm_mday,
-                timeinfo.tm_hour,
-                timeinfo.tm_min,
-                timeinfo.tm_sec);
-    }
-
+// Kirim alert ke Firebase pakai unix ms saja
+void sendAlert(String type, float value, uint64_t startMs, uint64_t endMs) {
     FirebaseJson json;
     json.set("type", type);
     json.set("value", value);
-    json.set("start_ms", startMs);
-    json.set("end_ms", endMs);
-    json.set("start_time", startISO);
-    json.set("end_time", endISO);
+    json.set("start_ms", (long long)startMs); // cast ke 64-bit
+    json.set("end_ms", (long long)endMs);
 
-    String path = "/devices/alert/" + String(startMs);
+    // Path pakai cast ke long long juga
+    String path = "/devices/alert/" + String((long long)startMs);
 
     if (Firebase.setJSON(fbdo, path, json)) {
         Serial.printf("Alert sent: %s = %.2f\n", type.c_str(), value);
@@ -69,32 +49,32 @@ void sendAlert(String type, float value, unsigned long startMs, unsigned long en
     }
 }
 
-
 // Fungsi handle alert per sensor
 void handleSingleAlert(float value, float minV, float maxV, float thr,
                        AlertState& alert, const char* type) 
 {
+    uint64_t currentMs = nowMs();
+    if (currentMs == 0) return; // NTP belum ready, skip
+
     if (outOfRange(value, minV, maxV)) {
-        // sensor keluar range
         if (!alert.active) {
             alert.active = true;
-            alert.startTime = nowMs();
+            alert.startTime = currentMs;
+
             alert.lastValue = value;
-            sendAlert(type, value, alert.startTime, 0); // kirim alert pertama
-        }
-        else if (beyondThreshold(value, alert.lastValue, thr)) {
-            // perubahan signifikan
+            sendAlert(type, value, (long long)alert.startTime, 0);
+        } else if (beyondThreshold(value, (long long) alert.lastValue, thr)) {
             alert.lastValue = value;
-            sendAlert(type, value, alert.startTime, 0);
+            sendAlert(type, value, (long long)alert.startTime, 0);
         }
     } else {
-        // sensor kembali normal
         if (alert.active) {
-            sendAlert(type, value, alert.startTime, nowMs());
+            sendAlert(type, value, (long long) alert.startTime, currentMs);
             alert.active = false;
         }
     }
 }
+
 
 // Fungsi utama untuk semua sensor
 void checkAlerts(float ph, float ec, float tds, float temp) {
