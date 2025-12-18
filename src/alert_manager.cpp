@@ -5,22 +5,31 @@
 
 extern LiquidCrystal_I2C lcd;
 // STATE ALERT
-AlertState phAlert = {false, 0, 0};
-AlertState ecAlert = {false, 0, 0};
-AlertState tdsAlert = {false, 0, 0};
-AlertState tempAlert = {false, 0, 0};
+AlertState phAlert   = {false, 0, ""};
+AlertState ecAlert   = {false, 0, ""};
+AlertState tdsAlert  = {false, 0, ""};
+AlertState tempAlert = {false, 0, ""};
 
 struct tm timeinfo;
 // Fungsi helper
-uint64_t nowMs() {
-    if (!getLocalTime(&timeinfo)) {
-        lcd.clear();
-        lcd.print("Time Sync Err");
-        return 0;
+uint64_t getNowMs() {
+    static bool synced = false;
+    static uint64_t baseUnixMs = 0;
+    static unsigned long baseMillis = 0;
+
+    if (!synced) {
+        struct tm t;
+        if (getLocalTime(&t)) {
+            baseUnixMs = (uint64_t)mktime(&t) * 1000ULL;
+            baseMillis = millis();
+            synced = true;
+        } else {
+            return 0;
+        }
     }
-    // Dapatkan unix timestamp ms dari struct tm
-    return (uint64_t)mktime(&timeinfo) * 1000ULL;
+    return baseUnixMs + (millis() - baseMillis);
 }
+
 
 
 bool outOfRange(float v, float minV, float maxV) {
@@ -32,71 +41,79 @@ bool beyondThreshold(float v, float last, float thr) {
 }
 
 // Kirim alert ke Firebase pakai unix ms saja
-void sendAlert(String type, float value, uint64_t startMs, uint64_t endMs) {
+void createAlert(AlertState& alert, const char* type, float value, uint64_t now) {
     FirebaseJson json;
     json.set("type", type);
+    json.set("start_ms", (long long)now);
     json.set("value", value);
-    json.set("start_ms", (long long)startMs); // cast ke 64-bit
-    json.set("end_ms", (long long)endMs);
+    json.set("end_ms", 0);
 
-    // Path pakai cast ke long long juga
-    String path = "/devices/alert/" + String((long long)startMs);
+    String path = "/devices/alert/" + String((long long)now);
 
     if (Firebase.setJSON(fbdo, path, json)) {
-        Serial.printf("Alert sent: %s = %.2f\n", type.c_str(), value);
-    } else {
-        Serial.printf("Failed sending alert: %s\n", fbdo.errorReason().c_str());
+        alert.path = path;
+        Serial.println("Alert START");
     }
 }
 
-// Fungsi handle alert per sensor
-void handleSingleAlert(float value, float minV, float maxV, float thr,
-                       AlertState& alert, const char* type) 
-{
-    uint64_t currentMs = nowMs();
-    if (currentMs == 0) return; // NTP belum ready, skip
+void endAlert(AlertState& alert, float value, uint64_t now) {
+    FirebaseJson json;
+    json.set("end_ms", (long long)now);
+    json.set("value", value);
 
-    if (outOfRange(value, minV, maxV)) {
+    Firebase.updateNode(fbdo, alert.path, json);
+    Serial.println("Alert END");
+}
+void handleSingleAlert(
+    float value, float minV, float maxV,
+    AlertState& alert, const char* type, uint64_t now
+) {
+    if (value < minV || value > maxV) {
         if (!alert.active) {
             alert.active = true;
-            alert.startTime = currentMs;
-
-            alert.lastValue = value;
-            sendAlert(type, value, (long long)alert.startTime, 0);
-        } else if (beyondThreshold(value, (long long) alert.lastValue, thr)) {
-            alert.lastValue = value;
-            sendAlert(type, value, (long long)alert.startTime, 0);
+            alert.startTime = now;
+            createAlert(alert, type, value, now);
         }
     } else {
         if (alert.active) {
-            sendAlert(type, value, (long long) alert.startTime, currentMs);
+            endAlert(alert, value, now);
             alert.active = false;
+            alert.path = "";
         }
     }
 }
 
+struct Thresholds {
+    float ph_min, ph_max;
+    float ec_min, ec_max;
+    float tds_min, tds_max;
+    float temp_min, temp_max;
+} th;
 
-// Fungsi utama untuk semua sensor
+unsigned long lastFetch = 0;
+
+void fetchThresholds() {
+    if (millis() - lastFetch < 5000) return;
+
+    th.ph_min   = getFloat("/app/config/thresholds/ph_min");
+    th.ph_max   = getFloat("/app/config/thresholds/ph_max");
+    th.ec_min   = getFloat("/app/config/thresholds/ec_min");
+    th.ec_max   = getFloat("/app/config/thresholds/ec_max");
+    th.tds_min  = getFloat("/app/config/thresholds/tds_min");
+    th.tds_max  = getFloat("/app/config/thresholds/tds_max");
+    th.temp_min = getFloat("/app/config/thresholds/temp_min_c");
+    th.temp_max = getFloat("/app/config/thresholds/temp_max_c");
+
+    lastFetch = millis();
+}
 void checkAlerts(float ph, float ec, float tds, float temp) {
-    // Ambil threshold dari Firebase
-    float ph_min = getFloat("/app/config/history_thresholds/ph_min");
-    float ph_max = getFloat("/app/config/history_thresholds/ph_max");
-    float ph_thr = getFloat("/app/config/history_thresholds/ph");
+    fetchThresholds();
 
-    float ec_min = getFloat("/app/config/history_thresholds/ec_min");
-    float ec_max = getFloat("/app/config/history_thresholds/ec_max");
-    float ec_thr = getFloat("/app/config/history_thresholds/ec_ms_cm");
+    uint64_t now = getNowMs();
+    if (now == 0) return;
 
-    float tds_min = getFloat("/app/config/history_thresholds/tds_min");
-    float tds_max = getFloat("/app/config/history_thresholds/tds_max");
-    float tds_thr = getFloat("/app/config/history_thresholds/tds_ppm");
-
-    float temp_min = getFloat("/app/config/history_thresholds/temp_min");
-    float temp_max = getFloat("/app/config/history_thresholds/temp_max");
-    float temp_thr = getFloat("/app/config/history_thresholds/temp_c");
-
-    handleSingleAlert(ph, ph_min, ph_max, ph_thr, phAlert, "PH_OUT_OF_RANGE");
-    handleSingleAlert(ec, ec_min, ec_max, ec_thr, ecAlert, "EC_OUT_OF_RANGE");
-    handleSingleAlert(tds, tds_min, tds_max, tds_thr, tdsAlert, "TDS_OUT_OF_RANGE");
-    handleSingleAlert(temp, temp_min, temp_max, temp_thr, tempAlert, "TEMP_OUT_OF_RANGE");
+    handleSingleAlert(ph,   th.ph_min,   th.ph_max,   phAlert,   "PH_OUT_OF_RANGE",   now);
+    handleSingleAlert(ec,   th.ec_min,   th.ec_max,   ecAlert,   "EC_OUT_OF_RANGE",   now);
+    handleSingleAlert(tds,  th.tds_min,  th.tds_max,  tdsAlert,  "TDS_OUT_OF_RANGE",  now);
+    handleSingleAlert(temp, th.temp_min, th.temp_max, tempAlert, "TEMP_OUT_OF_RANGE", now);
 }

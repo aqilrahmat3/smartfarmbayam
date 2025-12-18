@@ -56,5 +56,5 @@ void loop() {
   sendToFirebase(ph, tds, ec, temp);
   checkAlerts(ph, tds, ec, temp);
 
-  delay(1000);
+  delay(500);
 }
