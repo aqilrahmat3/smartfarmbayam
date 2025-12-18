@@ -8,6 +8,8 @@
 #include "auto_mode.h"
 #include "alert_manager.h"
 
+#ifndef UNIT_TEST 
+
 #define LAMP_PIN 5
 #define PUMP_ACID_PIN 2
 #define PUMP_NUTRI_PIN 4
@@ -58,3 +60,5 @@ void loop() {
 
   delay(1000);
 }
+
+#endif

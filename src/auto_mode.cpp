@@ -1,38 +1,29 @@
-#pragma once
+#include "auto_mode.h"
 
 #ifdef ARDUINO
-  #include <Arduino.h>
-#endif
 
-// ===== PIN =====
-#define RELAY_PUMP_ACID   2
-#define RELAY_PUMP_NUTRI  4
+#include <Arduino.h>
+#include "firebase_utils.h"
+#include "sensor.h"
 
-// ===== AMBANG BATAS =====
-static const float PH_MAX = 6.5;
-static const float PH_MIN = 5.5;
+// ===== KONSTANTA =====
+const float PH_MAX = 6.5;
+const float PH_MIN = 5.5;
 
-static const float TDS_MIN = 800;
-static const float TDS_MAX = 1700;
+const float TDS_MIN = 800;
+const float TDS_MAX = 1700;
 
-static const float EC_MIN = 1.8;
-static const float EC_MAX = 2.5;
+const float EC_MIN = 1.8;
+const float EC_MAX = 2.5;
 
 // ===== TIMER =====
-static unsigned long lastAcidRun = 0;
-static unsigned long lastNutrientRun = 0;
+unsigned long lastAcidRun = 0;
+unsigned long lastNutrientRun = 0;
 
-static const unsigned long MAX_RUN_TIME = 12000;
-static const unsigned long COOLDOWN_TIME = 45000;
+const unsigned long MAX_RUN_TIME = 12000;
+const unsigned long COOLDOWN_TIME = 45000;
 
-// ===== MOCK DEPENDENCY =====
-float readPH();
-float readEC();
-float readTDS();
-void setBool(const String& path, bool value);
-
-// ===== LOGIC =====
-inline void initAutoPins() {
+void initAutoPins() {
     pinMode(RELAY_PUMP_ACID, OUTPUT);
     pinMode(RELAY_PUMP_NUTRI, OUTPUT);
 
@@ -40,7 +31,7 @@ inline void initAutoPins() {
     digitalWrite(RELAY_PUMP_NUTRI, LOW);
 }
 
-inline void handleAutoMode() {
+void handleAutoMode() {
     float pHValue  = readPH();
     float ecValue  = readEC();
     float tdsValue = readTDS();
@@ -70,3 +61,5 @@ inline void handleAutoMode() {
         setBool("/devices/tool/pump_nutrient", false);
     }
 }
+
+#endif // ARDUINO
