@@ -5,9 +5,10 @@
 
 struct AlertState {
     bool active;
-    uint64_t startTime;  // HARUS 64-bit
-    uint64_t lastValue;  // juga 64-bit jika perlu
+    uint64_t startTime;
+    String path;
 };
+
 
 // Inisialisasi alert
 extern AlertState phAlert;

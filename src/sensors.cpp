@@ -29,8 +29,7 @@ float readTDS() {
 }
 
 float readEC() {
-  int rawEC = analogRead(EC_PIN);
-  return map(rawEC, 0, 4095, 0, 3);
+  return analogRead(EC_PIN) * (5.0 / 4095.0);
 }
 
 
