@@ -7,3 +7,4 @@
 build/
 .vscode/*
 !vscode/settings.json
+env.h

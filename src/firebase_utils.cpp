@@ -1,6 +1,7 @@
 #include "firebase_utils.h"
 #include <LiquidCrystal_I2C.h>
 #include "time.h"
+#include "env.h"
 
 // ======== External Objects ========
 extern LiquidCrystal_I2C lcd;
@@ -10,11 +11,6 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 // ======== Firebase Credentials ========
-#define FIREBASE_HOST "smartfarmbayam-default-rtdb.asia-southeast1.firebasedatabase.app"
-#define FIREBASE_EMAIL "purnama@gmail.com"
-#define FIREBASE_PASSWORD "pulsapulsa"
-#define FIREBASE_API_KEY "AIzaSyCvMJlHBeVkXnbHEcPmkUGMuYekWH9VBdE"
-
 
 // =========================================
 // 🔧 INISIALISASI FIREBASE
